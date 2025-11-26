@@ -1,7 +1,7 @@
 # AWS Best Practices Review
 
 **Repository:** terraform-aws-eks-lb-controller  
-**Review Date:** 2025-11-26  
+**Review Date:** 2024-11-26  
 **Reviewer:** AWS Terraform Specialist
 
 ## Executive Summary
@@ -42,12 +42,12 @@ This report provides a comprehensive review of AWS resources used in the terrafo
 **Priority: MEDIUM**
 
 The module includes recently added ELB v2 API actions that align with the latest AWS Load Balancer Controller requirements:
-- `elasticloadbalancing:DescribeTrustStores` (line 58)
-- `elasticloadbalancing:DescribeListenerAttributes` (line 59)
-- `elasticloadbalancing:DescribeCapacityReservation` (line 60)
-- `elasticloadbalancing:ModifyListenerAttributes` (line 291)
-- `elasticloadbalancing:ModifyCapacityReservation` (line 292)
-- `elasticloadbalancing:ModifyIpPools` (line 293)
+- `elasticloadbalancing:DescribeTrustStores`
+- `elasticloadbalancing:DescribeListenerAttributes`
+- `elasticloadbalancing:DescribeCapacityReservation`
+- `elasticloadbalancing:ModifyListenerAttributes`
+- `elasticloadbalancing:ModifyCapacityReservation`
+- `elasticloadbalancing:ModifyIpPools`
 
 **Recommendation:** The IAM policy is well-maintained and includes the latest API actions. Continue to monitor the official AWS Load Balancer Controller GitHub repository for policy updates. The current default Helm chart version is `1.10.1` which may be outdated.
 
@@ -56,11 +56,11 @@ The module includes recently added ELB v2 API actions that align with the latest
 #### 2. Resource Wildcard Usage
 **Priority: MEDIUM**
 
-Multiple policy statements use `"resources": ["*"]` which is common for AWS Load Balancer Controller but could be more restrictive:
-- Lines 14-28: IAM service-linked role creation
-- Lines 62-66: EC2 and ELB describe operations
-- Lines 88-92: ACM, WAF, Shield operations
-- Lines 99-103: EC2 security group operations
+Multiple policy statements use `"resources": ["*"]` which is common for AWS Load Balancer Controller but could be more restrictive in the following areas:
+- IAM service-linked role creation
+- EC2 and ELB describe operations
+- ACM, WAF, Shield operations
+- EC2 security group operations
 
 **Recommendation:** While wildcards are standard for this controller due to dynamic resource creation, consider:
 1. Using condition keys to scope permissions where possible (already implemented for cluster tags)
@@ -75,9 +75,9 @@ Multiple policy statements use `"resources": ["*"]` which is common for AWS Load
 **Priority: LOW**
 
 The policy includes newer EC2 IPAM-related permissions:
-- `ec2:GetSecurityGroupsForVpc` (line 45)
-- `ec2:DescribeIpamPools` (line 46)
-- `ec2:DescribeRouteTables` (line 47)
+- `ec2:GetSecurityGroupsForVpc`
+- `ec2:DescribeIpamPools`
+- `ec2:DescribeRouteTables`
 
 **Recommendation:** These permissions are appropriate for AWS Load Balancer Controller's advanced VPC integration features. No changes needed.
 
@@ -137,7 +137,7 @@ The module uses a sensible default naming pattern: `${cluster_name}-alb-ingress`
 
 The trust policy correctly implements security best practices:
 - ✅ Restricts to federated OIDC provider
-- ✅ Uses namespace and service account name in condition
+- ✅ Uses namespace and service account name in condition (format: `system:serviceaccount:${namespace}:${service_account_name}`)
 - ✅ Validates OIDC subject claim
 - ✅ Effect is explicitly set to "Allow" with proper scoping
 
@@ -148,9 +148,9 @@ The trust policy correctly implements security best practices:
 #### 2. OIDC Provider Validation
 **Priority: MEDIUM**
 
-The trust policy uses `StringEquals` for OIDC issuer validation (line 391-392), which is the recommended approach.
+The trust policy uses `StringEquals` for OIDC issuer validation, which is the recommended approach.
 
-**Recommendation:** Ensure users provide the correct OIDC issuer URL without the `https://` prefix since the module strips it (line 392). This is correctly implemented.
+**Recommendation:** Ensure users provide the correct OIDC issuer URL. The module handles the URL by removing the `https://` prefix in the condition variable. This is correctly implemented.
 
 ---
 
@@ -171,7 +171,7 @@ The trust policy uses `StringEquals` for OIDC issuer validation (line 391-392), 
 #### 1. Helm Chart Version
 **Priority: HIGH**
 
-The default Helm chart version is `1.10.1`, which may be outdated. The latest version as of November 2024 is approximately v2.14.x of the controller.
+The default Helm chart version is `1.10.1`, which may be outdated. Check the EKS Charts repository for the latest stable version of the controller.
 
 **Recommendation:** Update the default `helm_chart_version` variable to a more recent version. Check the [EKS Charts repository](https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller) for the latest stable version.
 
@@ -203,10 +203,10 @@ The IAM policy includes extensive security group management permissions with tag
 **Priority: HIGH (Security - Compliant)**
 
 The module implements tag-based scoping for security operations:
-- ✅ Requires cluster tags for security group creation (lines 124-143)
-- ✅ Requires cluster tags for security group modifications (lines 186-196)
-- ✅ Requires cluster tags for load balancer creation (lines 209-217)
-- ✅ Prevents tag manipulation on untagged resources (lines 154-173)
+- ✅ Requires cluster tags for security group creation
+- ✅ Requires cluster tags for security group modifications
+- ✅ Requires cluster tags for load balancer creation
+- ✅ Prevents tag manipulation on untagged resources
 
 **Recommendation:** This is an excellent security practice. The tag-based conditions limit the blast radius if credentials are compromised. Ensure users understand they need to properly tag their VPC subnets for the controller to function.
 
@@ -446,6 +446,6 @@ The module is production-ready with the following priorities:
 
 ---
 
-**Report Generated:** 2025-11-26  
+**Report Generated:** 2024-11-26  
 **Module Version:** Current main branch  
 **Review Methodology:** Code analysis + AWS documentation verification + security best practices audit
